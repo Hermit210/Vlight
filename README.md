@@ -1,4 +1,4 @@
-"Mood Rooms": Solana-Native Lighting/Atmosphere Studio
+  **Mood Rooms": Solana-Native Lighting/Atmosphere Studio
 
 Use this as a single, complete spec — feed it to Claude Code / Cursor / Kiro as-is. Scope is locked deliberately narrow (per the prior-art findings: Portals already owns "tokenize the whole room," so this product does NOT compete there — it competes on lighting/atmosphere as the tradeable unit).
 
