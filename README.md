@@ -1,5 +1,5 @@
   **Mood Rooms": Solana-Native Lighting/Atmosphere Studio
-
+"Mood Rooms — a Solana-native studio where lighting, color, and atmosphere (not furniture) are the creative medium: build a vibe in seconds, remix anyone's, and mint/sell your lighting packs as ownable Metaplex Core assets."
 Use this as a single, complete spec — feed it to Claude Code / Cursor / Kiro as-is. Scope is locked deliberately narrow (per the prior-art findings: Portals already owns "tokenize the whole room," so this product does NOT compete there — it competes on lighting/atmosphere as the tradeable unit).
 
 ---
