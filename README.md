@@ -196,12 +196,4 @@ Solana (touched only on: register_creator, mint_pack, list_pack, buy_pack)
 
 ---
 
-## 7. DEMO SCRIPT (for pitch/hackathon)
-
-1. Land on a pre-lit room, zero wallet, zero signup.
-2. Drag one slider — fog density or color temperature — whole mood shifts in real time. This is the hook; it has to land in under 10 seconds.
-3. Hit "Remix" on a sample published room, change 2–3 things, get a shareable link — under 30 seconds total.
-4. Connect wallet, publish the remix's custom lighting config as a Pack — show one real, verifiable on-chain mint + listing.
-5. Close by buying a Pack from a second (demo) wallet, showing the royalty split land back to the original creator.
-
-Say explicitly in the pitch: rooms are never tokenized — only reusable lighting/atmosphere/sound Packs are, because that's the part with actual resale value, unlike a one-off personal room composition.
+#
