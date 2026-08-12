@@ -2,7 +2,7 @@
 
 import { useOverlayStore } from "@/store/overlay-store";
 import { ColorField, SelectField, SliderField } from "@/components/ui/fields";
-import { GLOW_POSITIONS, MAX_GLOW_LAYERS } from "@/types/overlay";
+import { GLOW_POSITIONS, MAX_GLOW_LAYERS, PARTICLE_TYPES } from "@/types/overlay";
 
 // Manual overlay controls — free forever, unlimited (spec §0/§8). This will
 // be tucked behind the settings icon in the native-camera-style TopBar once
@@ -18,6 +18,9 @@ export function ControlsPanel() {
   const addGlowLayer = useOverlayStore((s) => s.addGlowLayer);
   const updateGlowLayer = useOverlayStore((s) => s.updateGlowLayer);
   const removeGlowLayer = useOverlayStore((s) => s.removeGlowLayer);
+
+  const particles = useOverlayStore((s) => s.config.particles);
+  const setParticles = useOverlayStore((s) => s.setParticles);
 
   return (
     <div className="pointer-events-auto absolute right-3 top-3 z-10 flex max-h-[calc(100vh-1.5rem)] w-64 flex-col gap-3 overflow-y-auto rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-md">
@@ -92,6 +95,25 @@ export function ControlsPanel() {
           </button>
         </div>
       ))}
+
+      <h3 className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+        Particles
+      </h3>
+      <SelectField
+        label="Type"
+        value={particles.type}
+        options={PARTICLE_TYPES}
+        onChange={(type) => setParticles(type, particles.density)}
+      />
+      {particles.type !== "none" && (
+        <SliderField
+          label="Density"
+          value={particles.density}
+          min={0}
+          max={1}
+          onChange={(density) => setParticles(particles.type, density)}
+        />
+      )}
     </div>
   );
 }
