@@ -23,7 +23,10 @@ export function ControlsPanel() {
   const setParticles = useOverlayStore((s) => s.setParticles);
 
   return (
-    <div className="pointer-events-auto absolute right-3 top-3 z-10 flex max-h-[calc(100vh-1.5rem)] w-64 flex-col gap-3 overflow-y-auto rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-md">
+    <div
+      className="pointer-events-auto absolute right-3 z-20 flex w-64 flex-col gap-3 overflow-y-auto rounded-xl border border-white/10 bg-black/60 p-3 backdrop-blur-md"
+      style={{ top: "calc(3.5rem + env(safe-area-inset-top))", maxHeight: "calc(100vh - 5rem)" }}
+    >
       <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
         Color grade
       </h3>

@@ -53,7 +53,12 @@ export function useCamera() {
     requestCamera(facingMode === "user" ? "environment" : "user");
   }, [facingMode, requestCamera]);
 
+  const closeCamera = useCallback(() => {
+    stopStream();
+    setStatus("idle");
+  }, [stopStream]);
+
   useEffect(() => stopStream, [stopStream]);
 
-  return { videoRef, status, error, facingMode, requestCamera, switchCamera, stopStream };
+  return { videoRef, status, error, facingMode, requestCamera, switchCamera, stopStream, closeCamera };
 }
