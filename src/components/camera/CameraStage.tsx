@@ -3,6 +3,8 @@
 import { RefObject } from "react";
 import { Canvas } from "@react-three/fiber";
 import { VideoPlane } from "./VideoPlane";
+import { GlowLayers } from "./GlowLayers";
+import { PostFX } from "./PostFX";
 
 interface CameraStageProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -20,6 +22,8 @@ export function CameraStage({ videoRef, active }: CameraStageProps) {
       {active && (
         <Canvas className="!absolute inset-0" gl={{ antialias: true }}>
           <VideoPlane videoRef={videoRef} />
+          <GlowLayers />
+          <PostFX />
         </Canvas>
       )}
     </>
