@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useCamera } from "@/hooks/useCamera";
 import { CameraStage } from "@/components/camera/CameraStage";
+import { ControlsPanel } from "@/components/camera/ControlsPanel";
 
 export default function Home() {
   const { videoRef, status, error, requestCamera } = useCamera();
@@ -15,6 +16,7 @@ export default function Home() {
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       <CameraStage videoRef={videoRef} active={status === "granted"} />
+      {status === "granted" && <ControlsPanel />}
 
       {status !== "granted" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center text-white">
