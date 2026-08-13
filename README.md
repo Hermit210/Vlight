@@ -1,199 +1,118 @@
-  **Mood Rooms": Solana-Native Lighting/Atmosphere Studio
-"Mood Rooms — a Solana-native studio where lighting, color, and atmosphere (not furniture) are the creative medium: build a vibe in seconds, remix anyone's, and mint/sell your lighting packs as ownable Metaplex Core assets."
+# Vlight
 
+A live AR "vibe filter" for your camera — describe a mood in text (or tune it
+by hand), watch it composite onto your real room in real time, then mint the
+look as a tradeable Metaplex Core asset on Solana. No hardware, no physical
+bulbs, no depth-aware AR — this is screen-space compositing (color grade +
+glow + particles) over your live camera feed, in the same category as a
+Snapchat/Instagram filter.
 
----
+## Stack
 
-## 0. LOCKED PRODUCT DEFINITION (do not expand without re-reading this section)
+- Next.js (App Router) + TypeScript + Tailwind
+- Three.js / React Three Fiber + `@react-three/postprocessing` for the
+  camera-feed VideoTexture, color-grade shader, glow sprites, bloom, and
+  particle layers
+- Zustand for editor state
+- Supabase (session save, shareable links, `asset_catalog` marketplace)
+- Anthropic API (structured outputs) for prompt → overlay generation
+- Solana: `@solana/wallet-adapter-react` + an Anchor program
+  (`register_creator` / `mint_pack` / `list_pack` / `buy_pack`) CPI'ing into
+  Metaplex Core
+- Serwist for the installable PWA shell
 
-**What it is:** A browser 3D space where a user authors light, color, fog, and sound — not furniture, not layout — and can save that authored "vibe" as a reusable, ownable, sellable asset (a Pack). Rooms/geometry are free and personal, never tokenized. Packs are the only tokenized unit.
+## Getting started
 
-**What ships in v1:**
-- Guest mode, zero wallet required to build/save/share a room
-- 4 pre-built environments (no custom geometry/furniture building in v1)
-- Lighting + atmosphere + sound editor (the core product)
-- Save room, generate shareable link
-- One-click remix of any published room
-- Wallet connect (optional, appears only when publishing a Pack)
-- Mint a Pack as a Metaplex Core asset, list it, buy it with SOL, apply it instantly
-
-**Explicitly OUT of v1 — do not build these unless told otherwise:**
-- Multiplayer / live co-editing
-- Custom object/furniture upload or geometry editing
-- Tokenizing the room itself
-- A platform token
-- Full social graph (follows/comments) — a public gallery + share link is enough
-- AI text-to-scene geometry generation
-
----
-
-## 1. TECH STACK — VERIFIED CURRENT PACKAGES/LINKS
-
-### Frontend framework
-- **Next.js** (App Router) + **TypeScript** — https://nextjs.org/docs
-- **Tailwind CSS** — https://tailwindcss.com/docs
-- **shadcn/ui** — https://ui.shadcn.com/docs
-
-### 3D engine
-- **Three.js** — https://threejs.org/docs/
-- **React Three Fiber** — `npm i @react-three/fiber` — https://r3f.docs.pmnd.rs/
-- **drei** (helpers: environment, controls, postprocessing helpers) — `npm i @react-three/drei` — https://github.com/pmndrs/drei
-- **postprocessing** (bloom for neon/glow effects — important for the lighting product) — `npm i postprocessing @react-three/postprocessing` — https://github.com/pmndrs/react-postprocessing
-- **leva** (dev-time GUI, useful for building your own lighting control panel UX reference) — `npm i leva` — https://github.com/pmndrs/leva
-
-### State management
-- **Zustand** — `npm i zustand` — https://zustand.docs.pmnd.rs/
-
-### Audio / music-reactive lighting
-- **Tone.js** (scheduling, synths, effects — good for ambient embedded soundtracks) — `npm i tone` — https://tonejs.github.io/
-- **Web Audio API** (native — for real-time frequency analysis driving light animation; no package needed, use `AnalyserNode`) — https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
-- **Howler.js** (simpler audio playback layer if Tone.js is overkill for v1) — `npm i howler` — https://howlerjs.com/
-
-### Backend / database
-- **Supabase** (Postgres + Storage + Auth for guest/account flow) — https://supabase.com/docs
-- Alternative lightweight object storage: **Cloudflare R2** — https://developers.cloudflare.com/r2/
-
-### Solana — wallet layer
-- **@solana/wallet-adapter-react** + **@solana/wallet-adapter-react-ui** + **@solana/wallet-adapter-wallets** — https://github.com/anza-xyz/wallet-adapter — setup guide: https://solana.com/developers/cookbook/wallets/connect-wallet-react
-- **@solana/web3.js** — https://solana.com/docs/clients/javascript
-
-### Solana — program framework
-- **Anchor** (Rust framework for the on-chain program) — install via AVM: `cargo install avm --git https://github.com/coral-xyz/anchor`, then `avm install latest && avm use latest` — https://www.anchor-lang.com/docs
-- Browser-based, zero-setup option for prototyping the program fast: **Solana Playground** — https://beta.solpg.io/
-
-### Solana — asset/NFT layer (THIS IS THE KEY DECISION)
-- **Metaplex Core** — the current recommended NFT standard for new Solana projects. Single-account design (~0.0029 SOL per mint vs ~0.022 SOL for legacy Token Metadata), enforced royalties by default, plugin system for custom behavior (attributes, royalty splits, allowlists).
-  - JS/TS SDK: `npm install @metaplex-foundation/mpl-core @metaplex-foundation/umi @metaplex-foundation/umi-bundle-defaults` — https://www.metaplex.com/docs/smart-contracts/core
-  - Wallet-adapter signer bridge: `npm i @metaplex-foundation/umi-signer-wallet-adapters` — connects your existing wallet-adapter session to Umi for signing mint/list/buy transactions
-  - Create-asset guide: https://www.metaplex.com/docs/smart-contracts/core/create-asset
-  - **Do not use** `@metaplex-foundation/js` (legacy, deprecated) or `@metaplex/js` (deprecated, unsupported) — both show deprecation notices on npm as of 2026.
-  - **Do not use Bubblegum/compressed NFTs** for v1 — Core is simpler to ship correctly in a short build window and your Pack volume (creator-authored assets, not mass-generated) doesn't need cNFT-scale compression economics.
-
-### RPC / indexing
-- **Helius** (Solana RPC + webhooks, used to index on-chain mint/list/buy events back into your Postgres `asset_catalog` cache so the app never hits RPC on the hot path) — https://www.helius.dev/docs
-- Alternative: **QuickNode** Solana endpoints — https://www.quicknode.com/docs/solana
-
----
-
-## 2. DATA MODEL (Postgres)
-
-```sql
--- rooms: personal, free, never tokenized
-create table rooms (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid,               -- nullable for guest mode (local/session-scoped)
-  title text,
-  environment_id text not null,     -- one of 4 preset environments
-  lighting jsonb not null,          -- { lights: [...], effects: [...], color_palette, fog, particles }
-  sound jsonb,                      -- { track_id, volume, reactive: bool }
-  applied_pack_mints text[],        -- Metaplex Core mint addresses of any purchased Packs applied
-  is_published boolean default false,
-  remix_of_room_id uuid references rooms(id),
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- asset_catalog: mirrors on-chain Pack mints for fast querying (synced via Helius webhook)
-create table asset_catalog (
-  mint text primary key,            -- Metaplex Core asset address
-  creator_wallet text not null,
-  kind text not null,               -- 'lighting_pack' | 'atmosphere_pack' | 'sound_pack'
-  name text not null,
-  price_lamports bigint,
-  royalty_bps int,
-  remix_of_mint text references asset_catalog(mint),
-  config jsonb not null,            -- the actual lighting/atmosphere/sound parameters this Pack applies
-  thumbnail_url text,
-  listed boolean default true,
-  created_at timestamptz default now()
-);
+```bash
+npm install
+npm run dev       # Turbopack — fast local dev, no service worker
 ```
 
-**Pack config shape** (this is the actual tradeable "vibe" — same shape you'd store in `rooms.lighting`/`sound` when applied):
-```json
-{
-  "lights": [
-    { "type": "point|spot|area|neon", "color": "#hex", "intensity": 1.0, "range": 10, "softness": 0.3 }
-  ],
-  "effects": [
-    { "type": "pulse|breathing|rainbow|flicker", "speed": 1.0, "target": "light_id" }
-  ],
-  "color_palette": ["#hex", "#hex"],
-  "fog": { "density": 0.02, "color": "#hex" },
-  "particles": { "type": "dust|rain|snow|none", "density": 0.5 },
-  "sound": { "track_url": "...", "reactive": true }
-}
+Open `https://localhost:3000` (or your LAN IP on a phone) and grant camera
+access. The manual controls panel (tint/saturation/warmth/vignette/glow
+layers/particles) works immediately with zero configuration — no external
+services required for that path.
+
+The **production build runs on webpack**, not Turbopack, because Serwist's
+service-worker plugin doesn't yet support Turbopack:
+
+```bash
+npm run build      # next build --webpack — this is also what generates public/sw.js
+npm start
 ```
 
----
+## Environment variables
 
-## 3. ANCHOR PROGRAM — INSTRUCTION SET (keep this exact list; do not add instructions without reason)
+Copy `.env.example` to `.env.local` and fill in what you need. Nothing here
+is required to run the manual editor — only for the pieces listed:
 
-```
-register_creator      // wallet -> creator PDA, one-time
-mint_pack              // mints a Metaplex Core asset representing one lighting/atmosphere/sound config
-list_pack               // lists a minted pack for sale, sets price + royalty_bps
-buy_pack                // atomic transfer + payment split (seller, platform fee, royalty if remix)
-```
+| Var | Needed for |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Session save/share links, the marketplace gallery (`/api/session`, `/api/packs`) |
+| `ANTHROPIC_API_KEY` | Prompt-to-overlay generation (`/api/generate-overlay`) |
+| `HELIUS_API_KEY` | Syncing on-chain mint/list/buy events into `asset_catalog` (not yet wired) |
 
-**Explicitly do NOT build:** `create_room`, `update_room`, `publish_room` on-chain (rooms live entirely in Postgres — no reason for them to touch the chain), or any room/geometry NFT minting instruction.
+For Supabase: create a project, then run `supabase/schema.sql` in its SQL
+editor once.
 
-**PDA seeds:**
-```
-CreatorPDA:       ["creator", wallet]
-ListingPDA:       ["listing", mint]
-```
+## Anchor program (`programs/vlight`)
 
-Royalty enforcement: use Metaplex Core's built-in **Royalties plugin** at mint time (set basis points + creator address) rather than building custom royalty logic — this is enforced by the Core program itself, not something you need to reimplement. Reference: https://www.metaplex.com/docs/smart-contracts/core
+Compiles clean against the currently-installed toolchain: anchor-cli 0.32.1
+(via `avm`, not the older 0.30.1 that may still be on `PATH` — invoke it
+explicitly as `~/.avm/bin/anchor` if `anchor --version` looks stale) and
+mpl-core 0.12.1 built with its `anchor-0-32` feature so its Pubkey/AccountInfo
+types unify with `anchor-lang` 0.32.1 (no cross-crate-version CPI hacks
+needed).
 
----
-
-## 4. ARCHITECTURE
-
-```
-Browser (Next.js + R3F)
-  ├─ 3D render, lighting shaders, particle/fog systems — 100% client-side, never touches chain
-  ├─ Zustand editor state
-  ├─ Web Audio API analyser -> drives reactive-lighting shader uniforms
-  ├─ Wallet Adapter (lazy-loaded, only mounts when user opens "Publish")
-  ↓
-Next.js API routes
-  ├─ Room CRUD (Supabase)
-  ├─ Pack catalog reads (from asset_catalog, synced via Helius webhook — never live RPC calls on page load)
-  ↓
-Supabase Postgres + Storage
-  ├─ rooms, asset_catalog tables (§2)
-  ├─ thumbnail/audio file storage
-  ↓
-Solana (touched only on: register_creator, mint_pack, list_pack, buy_pack)
-  ├─ Anchor program (§3)
-  ├─ Metaplex Core for the actual asset tokens
-  ├─ Helius webhook -> writes back to asset_catalog on any mint/list/buy event
+```bash
+~/.avm/bin/anchor build     # -> target/deploy/vlight.so, target/idl/vlight.json
+~/.avm/bin/anchor deploy    # needs a funded devnet keypair — see below
 ```
 
----
+`Anchor.toml` points `[provider].wallet` at `.wallets/deployer-devnet.json`
+(gitignored — generate your own with `solana-keygen new`, then fund it via
+`solana airdrop` or https://faucet.solana.com). `PLATFORM_TREASURY` in
+`programs/vlight/src/lib.rs` is a devnet placeholder keypair — swap it for a
+real treasury wallet before any mainnet deployment.
 
-## 5. LIGHTING/EFFECT IMPLEMENTATION NOTES (the actual hard, high-value part)
+**What's wired vs. staged:** the program itself is complete and compiles —
+all four instructions, Metaplex Core CPI for minting, atomic SOL split
+(platform fee / remix royalty / seller) for buying. The *client-side*
+Mint/Buy buttons in the UI are intentionally disabled placeholders (see
+`PublishSheet.tsx`, `GalleryModal.tsx`) — wiring them up means building the
+actual `@solana/web3.js` transactions against the deployed program ID, which
+depends on a live deployment existing first.
 
-- Real Three.js lights (point/spot/area) for the 2–4 "hero" lights that cast shadows. Cap dynamic shadow-casting lights at 4 for performance.
-- Everything else (neon glow, RGB pulse, rainbow, breathing, flicker) = **emissive-material shaders with animated uniforms**, not literal dynamic lights — cheaper to run, and this is where `@react-three/postprocessing`'s bloom pass does the visual heavy lifting for the "premium glow" look.
-- Music-reactive: `AnalyserNode.getByteFrequencyData()` → normalize → feed into shader uniform (e.g. drive emissive intensity or pulse speed off bass frequencies). This is your strongest 5-second demo clip.
-- Fog: `THREE.FogExp2`, density as an editable parameter, cheap.
-- Particles: instanced geometry or a lightweight particle library — don't hand-roll a full particle system for v1; `drei`'s `<Sparkles>` or a simple instanced-mesh approach is enough for "dust/rain/snow."
+## What's live vs. staged
 
----
+Fully functional today, no external accounts needed: the camera pipeline
+(permission → VideoTexture → color grade → glow → bloom → particles), the
+manual controls panel, the native-camera-style UI chrome, capture/share
+sheet UI, wallet connect (devnet, no key required), and PWA install.
 
-## 6. BUILD ORDER
+Wired but inert until you supply the matching env var: session save/share
+links and the gallery (Supabase), prompt generation (Anthropic), on-chain
+mint/list/buy (needs a deployed program + Helius webhook sync).
 
-1. R3F scene shell, camera controls, 4 preset environments loaded as GLB (day 1)
-2. Lighting editor UI: hero lights + 2 shader effects + bloom postprocessing (day 1–2)
-3. Fog + particles + sound layer, reactive-lighting hookup (day 2)
-4. Save/load room to Supabase, guest mode, shareable link (day 2–3)
-5. Wallet adapter integration, gated behind "Publish" only (day 3)
-6. Anchor program: register_creator, mint_pack, list_pack, buy_pack — deploy to devnet first via Solana Playground for speed, then move to local Anchor project (day 3–4)
-7. Wire marketplace UI to asset_catalog + Helius webhook sync (day 4)
-8. Remix flow + polish + demo script (day 4–5)
+## Project structure
 
----
-
-#
+```
+src/
+  app/                    routes: / (camera), /s/[id] (shared session),
+                           api/session, api/generate-overlay, api/packs
+  components/
+    camera/                CameraStage, VideoPlane (shader), GlowLayers,
+                            ParticlesLayer, PostFX, TopBar/PromptBar/
+                            BottomControlBar, ControlsPanel
+    wallet/                WalletContextProvider, PublishSheet (mint UI)
+    marketplace/           GalleryModal (browse + remix + buy UI)
+  store/                   overlay-store (the Pack config — same shape
+                           whether hand-tuned or AI-generated), capture-
+                           store, credits-store
+  lib/                     overlay-schema (Zod, shared by session save and
+                           LLM output validation), supabase-server, guest-id
+  types/overlay.ts          OverlayConfig — the tokenizable unit
+programs/vlight/            Anchor program
+supabase/schema.sql          sessions / asset_catalog / prompt_credits /
+                             prompt_generations
+```
