@@ -5,10 +5,10 @@ import { create } from "zustand";
 // server-side default so the UI reads correctly before the backend exists.
 interface CreditsState {
   creditsRemaining: number;
-  decrement: () => void;
+  setCredits: (n: number) => void;
 }
 
 export const useCreditsStore = create<CreditsState>((set) => ({
   creditsRemaining: 3,
-  decrement: () => set((s) => ({ creditsRemaining: Math.max(0, s.creditsRemaining - 1) })),
+  setCredits: (creditsRemaining) => set({ creditsRemaining }),
 }));
