@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useCamera } from "@/hooks/useCamera";
 import { CameraStage } from "@/components/camera/CameraStage";
 import { ControlsPanel } from "@/components/camera/ControlsPanel";
@@ -8,9 +9,14 @@ import { TopBar } from "@/components/camera/TopBar";
 import { PromptBar } from "@/components/camera/PromptBar";
 import { BottomControlBar } from "@/components/camera/BottomControlBar";
 
+// Wallet adapter + UI only loads when Publish is opened — never in the
+// initial bundle, per spec §7.
+const PublishModal = dynamic(() => import("@/components/wallet/PublishModal"), { ssr: false });
+
 export default function Home() {
   const { videoRef, status, error, requestCamera, switchCamera, closeCamera } = useCamera();
   const [showSettings, setShowSettings] = useState(false);
+  const [showPublish, setShowPublish] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
 
   useEffect(() => {
@@ -32,7 +38,8 @@ export default function Home() {
           />
           {showSettings && <ControlsPanel />}
           <PromptBar />
-          <BottomControlBar onFlipCamera={switchCamera} />
+          <BottomControlBar onFlipCamera={switchCamera} onOpenPublish={() => setShowPublish(true)} />
+          {showPublish && <PublishModal onClose={() => setShowPublish(false)} />}
         </>
       )}
 

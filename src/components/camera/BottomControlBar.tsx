@@ -9,9 +9,10 @@ type Mode = (typeof MODES)[number];
 
 interface BottomControlBarProps {
   onFlipCamera: () => void;
+  onOpenPublish: () => void;
 }
 
-export function BottomControlBar({ onFlipCamera }: BottomControlBarProps) {
+export function BottomControlBar({ onFlipCamera, onOpenPublish }: BottomControlBarProps) {
   const [mode, setMode] = useState<Mode>("Photo");
   const lastCaptureUrl = useCaptureStore((s) => s.lastCaptureUrl);
   const capture = useCaptureStore((s) => s.capture);
@@ -40,12 +41,17 @@ export function BottomControlBar({ onFlipCamera }: BottomControlBarProps) {
       </div>
 
       <div className="flex w-full items-center justify-between px-8">
-        <div className="h-11 w-11 overflow-hidden rounded-lg border border-white/20 bg-white/5">
+        <button
+          onClick={onOpenPublish}
+          disabled={!lastCaptureUrl}
+          aria-label="Save as Pack"
+          className="h-11 w-11 overflow-hidden rounded-lg border border-white/20 bg-white/5 disabled:opacity-40"
+        >
           {lastCaptureUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={lastCaptureUrl} alt="Last capture" className="h-full w-full object-cover" />
           )}
-        </div>
+        </button>
 
         <button
           onClick={capture}
