@@ -10,6 +10,7 @@ import { TopBar } from "./TopBar";
 import { PromptBar } from "./PromptBar";
 import { BottomControlBar } from "./BottomControlBar";
 import { ShareSheet } from "./ShareSheet";
+import { GalleryModal } from "@/components/marketplace/GalleryModal";
 
 // Wallet adapter + UI only loads when Publish is opened — never in the
 // initial bundle, per spec §7.
@@ -26,6 +27,7 @@ export function CameraApp({ sessionId }: CameraAppProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showPublish, setShowPublish] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -62,10 +64,12 @@ export function CameraApp({ sessionId }: CameraAppProps) {
             onToggleSettings={() => setShowSettings((v) => !v)}
             onClose={closeCamera}
             onShare={() => setShowShare(true)}
+            onOpenGallery={() => setShowGallery(true)}
             flashOn={flashOn}
             onToggleFlash={() => setFlashOn((v) => !v)}
           />
           {showSettings && <ControlsPanel />}
+          {showGallery && <GalleryModal onClose={() => setShowGallery(false)} />}
           {loadError && (
             <div className="pointer-events-none absolute inset-x-4 top-16 z-20 rounded-lg bg-black/70 px-3 py-2 text-center text-xs text-red-300">
               {loadError}
