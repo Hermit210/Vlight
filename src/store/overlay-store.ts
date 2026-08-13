@@ -9,10 +9,17 @@ import {
   defaultOverlayConfig,
 } from "@/types/overlay";
 
+export interface RemixSource {
+  mint: string;
+  creatorWallet: string;
+  name: string;
+}
+
 interface OverlayState {
   config: OverlayConfig;
   activePrompt: string;
   selectedGlowId: string | null;
+  remixOf: RemixSource | null;
 
   setColorGrade: (patch: Partial<ColorGrade>) => void;
 
@@ -26,6 +33,8 @@ interface OverlayState {
 
   setActivePrompt: (prompt: string) => void;
   applyGeneratedConfig: (config: OverlayConfig, prompt?: string) => void;
+  applyRemix: (config: OverlayConfig, source: RemixSource) => void;
+  clearRemix: () => void;
   reset: () => void;
 }
 
@@ -33,6 +42,7 @@ export const useOverlayStore = create<OverlayState>((set, get) => ({
   config: defaultOverlayConfig(),
   activePrompt: "",
   selectedGlowId: null,
+  remixOf: null,
 
   setColorGrade: (patch) => {
     const { config } = get();
@@ -94,5 +104,14 @@ export const useOverlayStore = create<OverlayState>((set, get) => ({
   applyGeneratedConfig: (config, prompt) =>
     set({ config, activePrompt: prompt ?? get().activePrompt, selectedGlowId: null }),
 
-  reset: () => set({ config: defaultOverlayConfig(), activePrompt: "", selectedGlowId: null }),
+  // One-click remix (spec §0/§8): load a published Pack's config as a
+  // starting point and remember its origin so Publish can carry
+  // remix_of_mint through to list_pack for royalty routing.
+  applyRemix: (config, source) =>
+    set({ config, activePrompt: source.name, selectedGlowId: null, remixOf: source }),
+
+  clearRemix: () => set({ remixOf: null }),
+
+  reset: () =>
+    set({ config: defaultOverlayConfig(), activePrompt: "", selectedGlowId: null, remixOf: null }),
 }));

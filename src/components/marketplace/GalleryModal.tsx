@@ -29,7 +29,7 @@ interface GalleryModalProps {
 export function GalleryModal({ onClose }: GalleryModalProps) {
   const [packs, setPacks] = useState<Pack[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const applyGeneratedConfig = useOverlayStore((s) => s.applyGeneratedConfig);
+  const applyRemix = useOverlayStore((s) => s.applyRemix);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,8 +48,12 @@ export function GalleryModal({ onClose }: GalleryModalProps) {
     };
   }, []);
 
-  const apply = (pack: Pack) => {
-    applyGeneratedConfig(pack.overlay_config, pack.source_prompt ?? pack.name);
+  const remix = (pack: Pack) => {
+    applyRemix(pack.overlay_config, {
+      mint: pack.mint,
+      creatorWallet: pack.creator_wallet,
+      name: pack.name,
+    });
     onClose();
   };
 
@@ -101,10 +105,11 @@ export function GalleryModal({ onClose }: GalleryModalProps) {
                 </p>
                 <div className="flex gap-1.5">
                   <button
-                    onClick={() => apply(pack)}
+                    onClick={() => remix(pack)}
+                    title="Load this look onto your camera and start building your own remix"
                     className="flex-1 rounded-full bg-white px-2 py-1 text-[11px] font-medium text-black"
                   >
-                    Apply
+                    Remix
                   </button>
                   <button
                     disabled
