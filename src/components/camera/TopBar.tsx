@@ -1,16 +1,17 @@
 "use client";
 
-import { Settings, X, Zap, ZapOff } from "lucide-react";
+import { Settings, Share2, X, Zap, ZapOff } from "lucide-react";
 import { CreditBadge } from "./CreditBadge";
 
 interface TopBarProps {
   onToggleSettings: () => void;
   onClose: () => void;
+  onShare: () => void;
   flashOn: boolean;
   onToggleFlash: () => void;
 }
 
-export function TopBar({ onToggleSettings, onClose, flashOn, onToggleFlash }: TopBarProps) {
+export function TopBar({ onToggleSettings, onClose, onShare, flashOn, onToggleFlash }: TopBarProps) {
   return (
     <div className="pointer-events-auto absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
       <button
@@ -31,6 +32,13 @@ export function TopBar({ onToggleSettings, onClose, flashOn, onToggleFlash }: To
 
       <div className="flex items-center gap-2">
         <CreditBadge />
+        <button
+          onClick={onShare}
+          aria-label="Share"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md active:scale-95"
+        >
+          <Share2 size={18} />
+        </button>
         <button
           onClick={onClose}
           aria-label="Close"
