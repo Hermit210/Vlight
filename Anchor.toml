@@ -15,4 +15,13 @@ cluster = "devnet"
 wallet = ".wallets/deployer-devnet.json"
 
 [scripts]
-test = "echo \"no anchor mocha tests yet\""
+test = "ts-mocha -p ./tsconfig.tests.json -t 1000000 tests/**/*.ts"
+
+[test]
+startup_wait = 20000
+
+[test.validator]
+url = "https://api.devnet.solana.com"
+
+[[test.validator.clone]]
+address = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
