@@ -5,7 +5,10 @@ by hand), watch it composite onto your real room in real time, then mint the
 look as a tradeable Metaplex Core asset on Solana. No hardware, no physical
 bulbs, no depth-aware AR — this is screen-space compositing (color grade +
 glow + particles) over your live camera feed, in the same category as a
-Snapchat/Instagram filter.
+Snapchat/Instagram filter. If camera access is denied, unavailable, or just
+skipped, the same overlay pipeline runs over an illustrated dark fallback
+room instead — trying the "describe a vibe" experience never requires a
+camera.
 
 ## Stack
 
@@ -82,6 +85,24 @@ Mint/Buy buttons in the UI are intentionally disabled placeholders (see
 `PublishSheet.tsx`, `GalleryModal.tsx`) — wiring them up means building the
 actual `@solana/web3.js` transactions against the deployed program ID, which
 depends on a live deployment existing first.
+
+### Tests (`tests/vlight.test.ts`)
+
+Exercises the full `register_creator` → `mint_pack` → `list_pack` →
+`buy_pack` flow, including the remix-royalty split, against a **local**
+validator with mpl-core cloned in — no devnet funding needed:
+
+```bash
+~/.avm/bin/anchor test
+```
+
+**Known limitation on native Windows:** `solana-test-validator` needs
+symlink privileges that plain Windows doesn't grant outside Developer Mode
+or an elevated shell, so it fails to start there with `Os { code: 1314,
+"A required privilege is not held by the client" }`. Run it in WSL, Linux,
+or macOS, or enable Windows Developer Mode. The test file itself is correct
+and type-checks (`npx tsc --noEmit -p tsconfig.tests.json`) — this is purely
+an environment gap, not a code issue.
 
 ## What's live vs. staged
 
