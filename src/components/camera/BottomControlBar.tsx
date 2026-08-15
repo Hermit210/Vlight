@@ -10,9 +10,11 @@ type Mode = (typeof MODES)[number];
 interface BottomControlBarProps {
   onFlipCamera: () => void;
   onOpenPublish: () => void;
+  /** true in fallback-room mode, where there's no live camera to flip. */
+  flipDisabled?: boolean;
 }
 
-export function BottomControlBar({ onFlipCamera, onOpenPublish }: BottomControlBarProps) {
+export function BottomControlBar({ onFlipCamera, onOpenPublish, flipDisabled }: BottomControlBarProps) {
   const [mode, setMode] = useState<Mode>("Photo");
   const lastCaptureUrl = useCaptureStore((s) => s.lastCaptureUrl);
   const capture = useCaptureStore((s) => s.capture);
@@ -63,8 +65,9 @@ export function BottomControlBar({ onFlipCamera, onOpenPublish }: BottomControlB
 
         <button
           onClick={onFlipCamera}
+          disabled={flipDisabled}
           aria-label="Flip camera"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md active:scale-95"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md active:scale-95 disabled:opacity-30"
         >
           <RefreshCw size={18} />
         </button>

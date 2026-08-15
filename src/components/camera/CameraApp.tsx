@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { Camera, X } from "lucide-react";
 import { useCamera } from "@/hooks/useCamera";
 import { useOverlayStore } from "@/store/overlay-store";
 import { CameraStage } from "./CameraStage";
@@ -30,7 +31,12 @@ export function CameraApp({ sessionId }: CameraAppProps) {
   const [showGallery, setShowGallery] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
+  // Camera is opt-in, not required — the app is fully usable on the
+  // FallbackRoom background from the moment it loads (spec §0, locked
+  // requirement). Requesting on mount just gives the fast path a chance
+  // to skip the extra tap when the browser can resolve it instantly.
   useEffect(() => {
     requestCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,54 +60,61 @@ export function CameraApp({ sessionId }: CameraAppProps) {
     };
   }, [sessionId, applyGeneratedConfig]);
 
+  const useVideo = status === "granted";
+  const showCameraBanner = !useVideo && !bannerDismissed;
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
-      <CameraStage videoRef={videoRef} active={status === "granted"} />
+      <CameraStage videoRef={videoRef} useVideo={useVideo} />
 
-      {status === "granted" && (
-        <>
-          <TopBar
-            onToggleSettings={() => setShowSettings((v) => !v)}
-            onClose={closeCamera}
-            onShare={() => setShowShare(true)}
-            onOpenGallery={() => setShowGallery(true)}
-            flashOn={flashOn}
-            onToggleFlash={() => setFlashOn((v) => !v)}
-          />
-          {showSettings && <ControlsPanel />}
-          {showGallery && <GalleryModal onClose={() => setShowGallery(false)} />}
-          {loadError && (
-            <div className="pointer-events-none absolute inset-x-4 top-16 z-20 rounded-lg bg-black/70 px-3 py-2 text-center text-xs text-red-300">
-              {loadError}
-            </div>
-          )}
-          <PromptBar />
-          <BottomControlBar onFlipCamera={switchCamera} onOpenPublish={() => setShowPublish(true)} />
-          {showPublish && <PublishModal onClose={() => setShowPublish(false)} />}
-          {showShare && <ShareSheet onClose={() => setShowShare(false)} />}
-        </>
-      )}
-
-      {status !== "granted" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center text-white">
-          {status === "pending" && <p className="text-sm text-zinc-400">Requesting camera access…</p>}
-          {(status === "idle" || status === "denied" || status === "error") && (
-            <>
-              <p className="text-sm text-zinc-400">
-                {status === "denied"
-                  ? "Camera access was denied. Allow it in your browser settings, then retry."
-                  : error ?? "Vlight needs your camera to preview the live overlay."}
-              </p>
-              <button
-                onClick={() => requestCamera()}
-                className="rounded-full border border-white/20 bg-white/10 px-5 py-2 text-sm font-medium text-white hover:bg-white/20"
-              >
-                Enable camera
-              </button>
-            </>
-          )}
+      <TopBar
+        onToggleSettings={() => setShowSettings((v) => !v)}
+        onClose={closeCamera}
+        onShare={() => setShowShare(true)}
+        onOpenGallery={() => setShowGallery(true)}
+        flashOn={flashOn}
+        onToggleFlash={() => setFlashOn((v) => !v)}
+      />
+      {showSettings && <ControlsPanel />}
+      {showGallery && <GalleryModal onClose={() => setShowGallery(false)} />}
+      {loadError && (
+        <div className="pointer-events-none absolute inset-x-4 top-16 z-20 rounded-lg bg-black/70 px-3 py-2 text-center text-xs text-red-300">
+          {loadError}
         </div>
       )}
+
+      {showCameraBanner && (
+        <div className="pointer-events-auto absolute inset-x-4 top-16 z-20 flex items-center gap-2 rounded-xl border border-white/10 bg-black/70 px-3 py-2 backdrop-blur-md">
+          <Camera size={16} className="shrink-0 text-zinc-300" />
+          <p className="flex-1 text-xs text-zinc-300">
+            {status === "pending"
+              ? "Requesting camera access…"
+              : status === "denied"
+                ? "Camera denied — you're in the illustrated room. Allow it in browser settings to switch to your real camera."
+                : "No camera yet — you're in the illustrated room. The vibe still applies live."}
+          </p>
+          {status !== "pending" && (
+            <button
+              onClick={() => requestCamera()}
+              className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black"
+            >
+              Enable camera
+            </button>
+          )}
+          <button onClick={() => setBannerDismissed(true)} aria-label="Dismiss" className="shrink-0 text-zinc-400">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      <PromptBar />
+      <BottomControlBar
+        onFlipCamera={switchCamera}
+        onOpenPublish={() => setShowPublish(true)}
+        flipDisabled={!useVideo}
+      />
+      {showPublish && <PublishModal onClose={() => setShowPublish(false)} />}
+      {showShare && <ShareSheet onClose={() => setShowShare(false)} />}
     </div>
   );
 }
